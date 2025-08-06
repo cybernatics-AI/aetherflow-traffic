@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000/api
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - aetherflow-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite:///./aetherflow.db
+      - LOG_LEVEL=INFO
+      - HEDERA_NETWORK=testnet
+      - HEDERA_OPERATOR_ID=${HEDERA_OPERATOR_ID}
+      - HEDERA_OPERATOR_KEY=${HEDERA_OPERATOR_KEY}
+      - HEDERA_TOPIC_ID=${HEDERA_TOPIC_ID}
+      - HEDERA_TOKEN_ID=${HEDERA_TOKEN_ID}
+      - CORS_ORIGINS=http://localhost:3000,http://frontend:3000
+    volumes:
+      - backend-data:/app/data
+    restart: unless-stopped
+    networks:
+      - aetherflow-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./backend/monitoring/prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - aetherflow-network
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ./backend/monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
+    networks:
+      - aetherflow-network
+    depends_on:
+      - prometheus
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/nginx/certs
+    depends_on:
+      - frontend
+      - backend
+      - grafana
+    restart: unless-stopped
+    networks:
+      - aetherflow-network
+
+networks:
+  aetherflow-network:
+    driver: bridge
+
+volumes:
+  backend-data:
+  prometheus-data:
+  grafana-data:
