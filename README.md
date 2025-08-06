@@ -21,7 +21,7 @@
 
 ## 📋 Overview
 
-AetherFlow is a groundbreaking decentralized federated AI system built on the Hedera network that revolutionizes urban mobility. By leveraging the power of distributed intelligence, zero-knowledge proofs, and blockchain technology, AetherFlow creates a secure, privacy-preserving platform for optimizing traffic flow in urban environments.
+AetherFlow is a decentralized federated AI system built on the Hedera network that revolutionizes urban mobility. By leveraging the power of distributed intelligence, zero-knowledge proofs, and blockchain technology, AetherFlow creates a secure, privacy-preserving platform for optimizing traffic flow in urban environments.
 
 Our system enables vehicles, infrastructure nodes, and traffic management systems to collaborate in real-time while maintaining data sovereignty and privacy. The result is a significant reduction in commute times, lower carbon emissions, and a more efficient urban transportation ecosystem.
 
